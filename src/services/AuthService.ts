@@ -11,8 +11,9 @@ class AuthService {
         if (!response.data.token) {
             return response.data
         }
-        this.setUserInLocalStorage(response.data)
-        return response.data
+        const userObj = { ...response.data, username }
+        this.setUserInLocalStorage(userObj)
+        return userObj
     }
 
     logout() {
