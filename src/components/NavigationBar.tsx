@@ -1,7 +1,9 @@
-import React from "react"
+import  React, { useContext } from "react"
 import { Outlet, Link } from "react-router-dom"
+import { AuthContext } from "../contexts/AuthContext"
 
 export function NavigationBar() {
+    const { user, logout } = useContext(AuthContext);
     return(
         <>
             <nav className="bg-white border-gray-200 px-4 sm:px-6 py-2.5 rounded dark:bg-gray-800">
@@ -56,12 +58,23 @@ export function NavigationBar() {
                             </Link>
                         </li>
                         <li>
-                            <Link
-                            to="/login"
-                            className="block py-2 pr-4 pl-3 text-black md:p-0 dark:text-white"
-                            >
-                            Login
-                            </Link>
+                            {
+                                !user ? (
+                                    <Link
+                                    to="/login"
+                                    className="block py-2 pr-4 pl-3 text-black md:p-0 dark:text-white"
+                                    >
+                                    Login
+                                    </Link>
+                                ) : (
+                                    <>
+                                        <span className="text-black">Logged in: {user.username}</span>
+                                        <button className="block py-2 pr-4 pl-3 text-black dark:text-white" onClick={logout}>
+                                            Logout
+                                        </button>
+                                    </>
+                                )
+                            }
                         </li>
                         </ul>
                     </div>

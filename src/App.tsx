@@ -3,12 +3,18 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Chat from "./components/Chat";
 import { Login } from "./components/Login";
 import { NavigationBar } from './components/NavigationBar';
+import { AuthContextProvider } from './contexts/AuthContext';
 
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<NavigationBar />}>
+                <Route path="/" element={
+                        <AuthContextProvider>
+                            <NavigationBar />
+                        </AuthContextProvider>
+                    }
+                >
                     <Route path="" element={<Chat />} />
                     <Route path="login" element={<Login />} />
                 </Route>
