@@ -1,38 +1,47 @@
-import React, { useState } from 'react';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import React, { useState, useContext } from 'react'
+import useWebSocket, { ReadyState } from 'react-use-websocket'
+import { AuthContext } from "../contexts/AuthContext"
 
 export default function Chat() {
-    const [welcomeMessage, setWelcomeMessage] = useState("");
-    const [name, setName] = useState("");
-    const [message, setMessage] = useState("");
-    const [messageHistory, setMessageHistory] = useState<any>([]);
-    const { sendJsonMessage } = useWebSocket("ws://127.0.0.1:8000/")
+    const [welcomeMessage, setWelcomeMessage] = useState("")
+    const [name, setName] = useState("")
+    const [message, setMessage] = useState("")
+    const [messageHistory, setMessageHistory] = useState<any>([])
+    const { user } = useContext(AuthContext)
+    const { sendJsonMessage } = useWebSocket(user ? "ws://127.0.0.1:8000/" : null, {
+        queryParams: {
+            token: user ? user.token : "",
+        }
+    })
 
-    const { readyState } = useWebSocket("ws://127.0.0.1:8000/", {
+    const { readyState } = useWebSocket(user ? "ws://127.0.0.1:8000/" : null, {
+        queryParams: {
+            token: user ? user.token : "",
+        },
         onOpen: () => {
-            console.log("connected");
+            console.log("connected")
         },
         onClose: () => {
-            setWelcomeMessage("");
-            console.log("disconnected");
+            setWelcomeMessage("")
+            console.log("disconnected")
         },
         onMessage: (e) => {
-            const data = JSON.parse(e.data);
+            const data = JSON.parse(e.data)
             console.log("received message")
             // TODO declare these strings as consts
             switch (data.type) {
                 case "welcome_message":
-                    setWelcomeMessage(data.message);
-                    break;
+                    setWelcomeMessage(data.message)
+                    break
                 case "chat_message_echo":
-                    setMessageHistory((prev:any) => prev.concat(data));
-                    break;
+                    setMessageHistory((prev:any) => prev.concat(data))
+                    break
                 default:
-                    console.error("unknown message type");
-                    break;
+                    console.error("unknown message type")
+                    break
             }
         }
-    });
+    })
 
     const connectionStatus = {
         [ReadyState.CONNECTING]: "Connecting",
@@ -40,14 +49,14 @@ export default function Chat() {
         [ReadyState.CLOSING]: "Closing",
         [ReadyState.CLOSED]: "Closed",
         [ReadyState.UNINSTANTIATED]: "Uninstantiated"
-    }[readyState];
+    }[readyState]
 
     function handleChangeMessage(e: any) {
-        setMessage(e.target.value);
+        setMessage(e.target.value)
     }
 
     function handleChangeName(e: any) {
-        setName(e.target.value);
+        setName(e.target.value)
     }
 
     function handleSubmit() {
@@ -55,9 +64,9 @@ export default function Chat() {
             type: "chat_message",
             message,
             name
-        });
-        setName("");
-        setMessage("");
+        })
+        setName("")
+        setMessage("")
     }
 
     return (
