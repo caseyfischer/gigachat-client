@@ -1,6 +1,7 @@
 import { useContext } from "react"
 import { AuthContext } from "../contexts/AuthContext"
 import { MessageModel } from "../models/Message"
+import StringUtil from "../util/StringUtil"
 
 export function classNames(...classes: any) {
     return classes.filter(Boolean).join(" ")
@@ -8,12 +9,6 @@ export function classNames(...classes: any) {
 
 export function Message({ message }: { message: MessageModel }) {
     const { user } = useContext(AuthContext)
-
-    function formatMessageTimestamp(timestamp: string) {
-        const date = new Date(timestamp)
-        const fullString = date.toLocaleTimeString()
-        return fullString.split(":").slice(0, 2).join(":")
-    }
 
     return (
         <li
@@ -37,7 +32,7 @@ export function Message({ message }: { message: MessageModel }) {
                             lineHeight: "1rem"
                         }}
                     >
-                        {formatMessageTimestamp(message.timestamp)}
+                        {StringUtil.formatMessageTimestamp(message.timestamp)}
                     </span>
                 </div>
             </div>

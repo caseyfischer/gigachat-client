@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 import { AuthContext } from '../contexts/AuthContext'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { MessageModel } from "../models/Message"
 import { Message } from "./Message"
 
@@ -11,6 +11,7 @@ export default function Chat() {
     const [messageHistory, setMessageHistory] = useState<any>([])
     const { user } = useContext(AuthContext)
     const { conversationName } = useParams()
+    const navigate = useNavigate()
 
     const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/${conversationName}/` : null, {
         queryParams: {
