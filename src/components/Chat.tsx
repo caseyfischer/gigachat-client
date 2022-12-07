@@ -1,20 +1,16 @@
 import React, { useState, useContext } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
-import { AuthContext } from "../contexts/AuthContext"
+import { AuthContext } from '../contexts/AuthContext'
+import { useParams } from 'react-router-dom'
 
 export default function Chat() {
     const [welcomeMessage, setWelcomeMessage] = useState("")
-    const [name, setName] = useState("")
     const [message, setMessage] = useState("")
     const [messageHistory, setMessageHistory] = useState<any>([])
     const { user } = useContext(AuthContext)
-    const { sendJsonMessage } = useWebSocket(user ? "ws://127.0.0.1:8000/" : null, {
-        queryParams: {
-            token: user ? user.token : "",
-        }
-    })
+    const { conversationName } = useParams()
 
-    const { readyState } = useWebSocket(user ? "ws://127.0.0.1:8000/" : null, {
+    const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/${conversationName}/` : null, {
         queryParams: {
             token: user ? user.token : "",
         },
@@ -55,17 +51,12 @@ export default function Chat() {
         setMessage(e.target.value)
     }
 
-    function handleChangeName(e: any) {
-        setName(e.target.value)
-    }
-
     function handleSubmit() {
         sendJsonMessage({
             type: "chat_message",
             message,
-            name
+            name: user?.username
         })
-        setName("")
         setMessage("")
     }
 
@@ -73,13 +64,6 @@ export default function Chat() {
         <div>
             <span>The WebSocket is currently {connectionStatus}</span>
             <p>{welcomeMessage}</p>
-            <input 
-                name="name"
-                placeholder='Name'
-                onChange={handleChangeName}
-                value={name}
-                className="shadow-sm sm:text-sm border-gray-300 bg-gray-100 rounded-md"
-            />
             <input
                 name="message"
                 placeholder='Message'
