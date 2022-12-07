@@ -2,6 +2,8 @@ import React, { useState, useContext } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 import { AuthContext } from '../contexts/AuthContext'
 import { useParams } from 'react-router-dom'
+import { MessageModel } from "../models/Message"
+import { Message } from "./Message"
 
 export default function Chat() {
     const [welcomeMessage, setWelcomeMessage] = useState("")
@@ -30,7 +32,10 @@ export default function Chat() {
                     setWelcomeMessage(data.message)
                     break
                 case "chat_message_echo":
-                    setMessageHistory((prev:any) => prev.concat(data))
+                    setMessageHistory((prev:any) => prev.concat(data.message))
+                    break
+                case "last_50_messages":
+                    setMessageHistory(data.messages)
                     break
                 default:
                     console.error("unknown message type")
@@ -78,10 +83,10 @@ export default function Chat() {
                 Submit
             </button>
             <hr />
-            <ul>
+            <ul className="mt-3 flex flex-col-reverse relative w-full border border-gray-200 overflow-y-auto p-6">
                 {messageHistory.map((message: any, idx: number) => (
                     <div className='border border-gray-200 py-3 px-3' key={idx}>
-                        {message.name}: {message.message}
+                        <Message key={message.id} message={message} />
                     </div>
                 ))}
             </ul>
