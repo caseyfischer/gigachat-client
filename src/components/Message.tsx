@@ -10,9 +10,9 @@ export function Message({ message }: { message: MessageModel }) {
     const { user } = useContext(AuthContext)
 
     function formatMessageTimestamp(timestamp: string) {
-        // this only works for 2 digit hours... :facepalm:
         const date = new Date(timestamp)
-        return date.toLocaleTimeString().slice(0, 5)
+        const fullString = date.toLocaleTimeString()
+        return fullString.split(":").slice(0, 2).join(":")
     }
 
     return (
