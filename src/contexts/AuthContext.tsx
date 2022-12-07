@@ -40,9 +40,6 @@ export const AuthContextProvider: React.FC<{ children: ReactNode }> = ({ childre
     const authAxios = axios.create();
 
     authAxios.interceptors.request.use((config) => {
-        // is this going to clobber other headers..?
-        // maybe it should be this:
-        // config.headers = [...config.headers, ...authHeader()]
         const user = AuthService.getCurrentUser()
         if (user && user.token) {
             config.headers = config.headers || {}

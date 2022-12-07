@@ -1,6 +1,6 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Chat from "./components/Chat";
+import { Conversations } from './components/Conversations';
 import { Login } from "./components/Login";
 import { NavigationBar } from './components/NavigationBar';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -18,10 +18,11 @@ export default function App() {
                 >
                     <Route path="" element={
                         <ProtectedRoute>
-                            <Chat />
+                            <Conversations />
                         </ProtectedRoute>
                     } />
                     <Route path="login" element={<Login />} />
+                    <Route path="chats/:conversationName" element={<Chat />} />
                 </Route>
             </Routes>
         </BrowserRouter>
