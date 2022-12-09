@@ -4,6 +4,9 @@ import { AuthContext } from '../contexts/AuthContext'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MessageModel } from "../models/Message"
 import { Message } from "./Message"
+import InfiniteScroll from 'react-infinite-scroll-component'
+import { ChatLoader } from './ChatLoader'
+
 
 export default function Chat() {
     const [welcomeMessage, setWelcomeMessage] = useState("")
@@ -11,7 +14,8 @@ export default function Chat() {
     const [messageHistory, setMessageHistory] = useState<any>([])
     const { user } = useContext(AuthContext)
     const { conversationName } = useParams()
-    const navigate = useNavigate()
+    const [page, setPage] = useState(2)
+    const [hasMoreMessages, setHasMoreMessages] = useState(false)
 
     const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/${conversationName}/` : null, {
         queryParams: {
@@ -33,10 +37,11 @@ export default function Chat() {
                     setWelcomeMessage(data.message)
                     break
                 case "chat_message_echo":
-                    setMessageHistory((prev:any) => prev.concat(data.message))
+                    setMessageHistory((prev:any) => [data.message, ...prev])
                     break
                 case "last_50_messages":
                     setMessageHistory(data.messages)
+                    setHasMoreMessages(data.has_more)
                     break
                 default:
                     console.error("unknown message type")
@@ -66,6 +71,32 @@ export default function Chat() {
         setMessage("")
     }
 
+    async function fetchMessages() {
+        console.log("fetching messages!")
+        const res = await fetch(
+            `http://127.0.0.1:8000/api/messages/?conversation=${conversationName}&page=${page}`,
+            {
+                method: "GET",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: `Token ${user?.token}`
+                }
+            }
+        )
+        if (res.status === 200) {
+            const data: {
+                count: number
+                next: string | null // URL
+                previous: string | null // URL
+                results: MessageModel[]
+            } = await res.json()
+            setHasMoreMessages(data.next !== null)
+            setPage(page + 1)
+            setMessageHistory((prev: MessageModel[]) => prev.concat(data.results))
+        }
+    }
+
     return (
         <div>
             <span>The WebSocket is currently {connectionStatus}</span>
@@ -85,11 +116,27 @@ export default function Chat() {
             </button>
             <hr />
             <ul className="mt-3 flex flex-col-reverse relative w-full border border-gray-200 overflow-y-auto p-6">
-                {messageHistory.map((message: any, idx: number) => (
-                    <div className='border border-gray-200 py-3 px-3' key={idx}>
-                        <Message key={message.id} message={message} />
+                <div
+                    id="scrollableDiv"
+                    className="h-[20rem] mt-3 flex flex-col-reverse relative w-full border border-gray-200 overflow-y-auto p-6"
+                    >
+                    <div>
+                        {/* Put the scroll bar always on the bottom */}
+                        <InfiniteScroll
+                        dataLength={messageHistory.length}
+                        next={fetchMessages}
+                        className="flex flex-col-reverse" // To put endMessage and loader to the top
+                        inverse={true}
+                        hasMore={hasMoreMessages}
+                        loader={<ChatLoader />}
+                        scrollableTarget="scrollableDiv"
+                        >
+                        {messageHistory.map((message: MessageModel) => (
+                            <Message key={message.id} message={message} />
+                        ))}
+                        </InfiniteScroll>
                     </div>
-                ))}
+                </div>
             </ul>
         </div>
     )
