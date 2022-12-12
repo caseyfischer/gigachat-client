@@ -1,8 +1,9 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 import { AuthContext } from '../contexts/AuthContext'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MessageModel } from "../models/Message"
+import { ConversationModel } from "../models/Conversation"
 import { Message } from "./Message"
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { ChatLoader } from './ChatLoader'
@@ -16,6 +17,8 @@ export default function Chat() {
     const { conversationName } = useParams()
     const [page, setPage] = useState(2)
     const [hasMoreMessages, setHasMoreMessages] = useState(false)
+    const [participants, setParticipants] = useState<string[]>([])
+    const [conversation, setConversation] = useState<ConversationModel | null>(null)
 
     const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/${conversationName}/` : null, {
         queryParams: {
@@ -43,12 +46,47 @@ export default function Chat() {
                     setMessageHistory(data.messages)
                     setHasMoreMessages(data.has_more)
                     break
+                case "user_join":
+                    setParticipants((pcpts: string[]) => {
+                        if (!pcpts.includes(data.user)) {
+                            return [...pcpts, data.user]
+                        }
+                        return pcpts
+                    })
+                    break
+                case "user_leave":
+                    setParticipants((pcpts: string[]) => {
+                        const newPcpts = pcpts.filter((x) => x!== data.user)
+                        return newPcpts
+                    })
+                    break
+                case "online_user_list":
+                    setParticipants(data.users)
+                    break
                 default:
                     console.error("unknown message type")
                     break
             }
         }
     })
+
+    useEffect(() => {
+        async function fetchConversation() {
+            const res = await fetch(`http://127.0.0.1:8000/api/conversations/${conversationName}`, {
+                method: "GET",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: `Token ${user?.token}`
+                }
+            })
+            if (res.status === 200) {
+                const data: ConversationModel = await res.json()
+                setConversation(data)
+            }
+        }
+        fetchConversation()
+    }, [conversationName, user])
 
     const connectionStatus = {
         [ReadyState.CONNECTING]: "Connecting",
@@ -101,6 +139,19 @@ export default function Chat() {
         <div>
             <span>The WebSocket is currently {connectionStatus}</span>
             <p>{welcomeMessage}</p>
+            {
+                conversation && (
+                    <div className="py-6">
+                        <h3 className="text-3xl font-semibold text-gray-900">
+                            Chat with user: {conversation.other_user.username}
+                        </h3>
+                        <span className="text-sm">
+                            {conversation?.other_user.username} is currently
+                            {participants.includes(conversation.other_user.username) ? " online" : " offline"}
+                        </span>
+                    </div>
+                )
+            }
             <input
                 name="message"
                 placeholder='Message'
