@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
+import { useHotkeys } from 'react-hotkeys-hook'
 import { AuthContext } from '../contexts/AuthContext'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MessageModel } from "../models/Message"
@@ -96,11 +97,32 @@ export default function Chat() {
         [ReadyState.UNINSTANTIATED]: "Uninstantiated"
     }[readyState]
 
+    const inputReference: any = useHotkeys(
+        "enter",
+        () => {
+            console.log(`pressed enter. message: ${message}`)
+            handleSubmit()
+        },
+        {
+            enableOnFormTags: true
+        },
+        [message]
+    )
+    
+    useEffect(() => {
+        (inputReference.current as HTMLElement).focus()
+    }, [inputReference])
+
     function handleChangeMessage(e: any) {
+        console.log(`message updated to ${e.target.value}`)
         setMessage(e.target.value)
     }
 
     function handleSubmit() {
+        console.log(`submitting message: ${message}`)
+        if (message.length === 0 || message.length > 512) {
+            return;
+        }
         sendJsonMessage({
             type: "chat_message",
             message,
@@ -152,19 +174,23 @@ export default function Chat() {
                     </div>
                 )
             }
-            <input
-                name="message"
-                placeholder='Message'
-                onChange={handleChangeMessage}
-                value={message}
-                className="ml-2 shadow-sm sm:text-sm border-gray-300 bg-gray-100 rounded-md"
-            />
-            <button
-                className="bg-gray-300 px-3 py-1"
-                onClick={handleSubmit}
-            >
-                Submit
-            </button>
+            <div className="flex w-full items-center justify-between border border-gray-200 p-3">
+                <input
+                    type="text"
+                    placeholder="Message"
+                    className="block w-full rounded bg-gray-100 py-2 outline-none focus:text-gray-700"
+                    name="message"
+                    value={message}
+                    onChange={handleChangeMessage}
+                    required
+                    ref={inputReference}
+                    maxLength={511}
+                    autoComplete="off"
+                />
+                <button className="ml-3 bg-gray-300 px-3 py-1" onClick={handleSubmit}>
+                    Submit
+                </button>
+            </div>
             <hr />
             <ul className="mt-3 flex flex-col-reverse relative w-full border border-gray-200 overflow-y-auto p-6">
                 <div
