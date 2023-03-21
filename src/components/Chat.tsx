@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react'
+import React, { useState, useContext, useEffect, useRef } from 'react'
 import useWebSocket, { ReadyState } from 'react-use-websocket'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { AuthContext } from '../contexts/AuthContext'
@@ -20,6 +20,10 @@ export default function Chat() {
     const [hasMoreMessages, setHasMoreMessages] = useState(false)
     const [participants, setParticipants] = useState<string[]>([])
     const [conversation, setConversation] = useState<ConversationModel | null>(null)
+    const [meTyping, setMeTyping] = useState(false)
+    const [otherTyping, setOtherTyping] = useState(false)
+    const timeout = useRef<any>()
+    let newInputValue: string // not sure this is the best way to do this
 
     const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/${conversationName}/` : null, {
         queryParams: {
@@ -34,7 +38,6 @@ export default function Chat() {
         },
         onMessage: (e) => {
             const data = JSON.parse(e.data)
-            console.log("received message")
             // TODO declare these strings as consts
             switch (data.type) {
                 case "welcome_message":
@@ -63,6 +66,9 @@ export default function Chat() {
                     break
                 case "online_user_list":
                     setParticipants(data.users)
+                    break
+                case "typing":
+                    updateOtherTyping(data)
                     break
                 default:
                     console.error("unknown message type")
@@ -100,7 +106,6 @@ export default function Chat() {
     const inputReference: any = useHotkeys(
         "enter",
         () => {
-            console.log(`pressed enter. message: ${message}`)
             handleSubmit()
         },
         {
@@ -113,13 +118,39 @@ export default function Chat() {
         (inputReference.current as HTMLElement).focus()
     }, [inputReference])
 
+    function timeoutFunction() {
+        setMeTyping(false)
+        sendJsonMessage({ type: "typing", typing: false })
+    }
+
+    function onType() {
+        if (newInputValue !== undefined && newInputValue.length === 0) {
+            setMeTyping(false)
+            sendJsonMessage({ type: "typing", typing: false })
+        } else if (!meTyping) {
+            setMeTyping(true)
+            sendJsonMessage({ type: "typing", typing: true })
+        } else {
+            clearTimeout(timeout.current)
+        }
+        timeout.current = setTimeout(timeoutFunction, 5000)
+    }
+
+    useEffect(() => clearTimeout(timeout.current), [])
+
     function handleChangeMessage(e: any) {
-        console.log(`message updated to ${e.target.value}`)
-        setMessage(e.target.value)
+        newInputValue = e.target.value
+        setMessage(newInputValue)
+        onType()
+    }
+
+    function updateOtherTyping(event: { user: string, typing: boolean }) {
+        if (event.user !== user?.username) {
+            setOtherTyping(event.typing)
+        }
     }
 
     function handleSubmit() {
-        console.log(`submitting message: ${message}`)
         if (message.length === 0 || message.length > 512) {
             return;
         }
@@ -132,7 +163,6 @@ export default function Chat() {
     }
 
     async function fetchMessages() {
-        console.log("fetching messages!")
         const res = await fetch(
             `http://127.0.0.1:8000/api/messages/?conversation=${conversationName}&page=${page}`,
             {
@@ -170,6 +200,7 @@ export default function Chat() {
                         <span className="text-sm">
                             {conversation?.other_user.username} is currently
                             {participants.includes(conversation.other_user.username) ? " online" : " offline"}
+                            {otherTyping && <p className="truncate text-sm text-gray-500">typing...</p>}
                         </span>
                     </div>
                 )
@@ -208,9 +239,9 @@ export default function Chat() {
                         loader={<ChatLoader />}
                         scrollableTarget="scrollableDiv"
                         >
-                        {messageHistory.map((message: MessageModel) => (
-                            <Message key={message.id} message={message} />
-                        ))}
+                            {messageHistory.map((message: MessageModel) => (
+                                <Message key={message.id} message={message} />
+                            ))}
                         </InfiniteScroll>
                     </div>
                 </div>
