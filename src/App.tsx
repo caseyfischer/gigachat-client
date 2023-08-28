@@ -5,6 +5,7 @@ import { Login } from "./components/Login"
 import { NavigationBar } from './components/NavigationBar'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthContextProvider } from './contexts/AuthContext'
+import { NotificationContextProvider } from './contexts/NotificationContext'
 import { ActiveConversations } from './components/ActiveConversations'
 
 export default function App() {
@@ -13,7 +14,9 @@ export default function App() {
             <Routes>
                 <Route path="/" element={
                         <AuthContextProvider>
-                            <NavigationBar />
+                            <NotificationContextProvider>
+                                <NavigationBar />
+                            </NotificationContextProvider>
                         </AuthContextProvider>
                     }
                 >

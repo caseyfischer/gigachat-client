@@ -25,9 +25,9 @@ export default function Chat() {
     const timeout = useRef<any>()
     let newInputValue: string // not sure this is the best way to do this
 
-    const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/${conversationName}/` : null, {
+    const { readyState, sendJsonMessage } = useWebSocket(user ? `ws://127.0.0.1:8000/chats/${conversationName}/` : null, {
         queryParams: {
-            token: user ? user.token : "",
+            token: user ? user.token : ""
         },
         onOpen: () => {
             console.log("connected")
@@ -45,6 +45,7 @@ export default function Chat() {
                     break
                 case "chat_message_echo":
                     setMessageHistory((prev:any) => [data.message, ...prev])
+                    sendJsonMessage({ type: "read_messages"})
                     break
                 case "last_50_messages":
                     setMessageHistory(data.messages)
@@ -137,6 +138,14 @@ export default function Chat() {
     }
 
     useEffect(() => clearTimeout(timeout.current), [])
+
+    useEffect(() => {
+        if (connectionStatus === "Open") {
+            sendJsonMessage({ type: "read_messages" })
+        }
+    }, [connectionStatus, sendJsonMessage])
+
+    // ************ END HOOKS ************
 
     function handleChangeMessage(e: any) {
         newInputValue = e.target.value
